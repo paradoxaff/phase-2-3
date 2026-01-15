@@ -1,0 +1,39 @@
+Create speckit.specify for Phase II: Todo Full-Stack Web Application.
+
+Objective:
+Transform the CLI todo app into a modern multi-user web application with persistent storage.
+
+Functional Requirements:
+- User signup and signin (Better Auth)
+- Create task (title, optional description)
+- List all tasks for logged-in user
+- View task details
+- Update task
+- Delete task
+- Toggle task completion
+
+API Endpoints (REST):
+- GET    /api/{user_id}/tasks
+- POST   /api/{user_id}/tasks
+- GET    /api/{user_id}/tasks/{id}
+- PUT    /api/{user_id}/tasks/{id}
+- DELETE /api/{user_id}/tasks/{id}
+- PATCH  /api/{user_id}/tasks/{id}/complete
+
+Authentication Flow:
+- Frontend uses Better Auth
+- JWT issued on login
+- JWT attached as Authorization: Bearer <token>
+- Backend verifies JWT and extracts user ID
+- Backend enforces task ownership
+
+Acceptance Criteria:
+- Unauthorized requests return 401
+- Users only see their own tasks
+- Data persists across refresh
+- CRUD works end-to-end
+
+Out of Scope:
+- AI / Chatbot
+- Realtime updates
+- Advanced UI animations
