@@ -452,7 +452,7 @@ export async function POST(request: NextRequest, { params }: { params: { userId:
 
     // Process the natural language message using enhanced NLU with the authenticated tools
     const mcpToolsInstanceWithAuth = createMcpTools(authHeader);
-    const response = await processNaturalLanguage(message, userId, mcpToolsInstanceWithAuth);
+    const response = await processNaturalLanguage(message, userId!, mcpToolsInstanceWithAuth);
 
     return NextResponse.json({
       conversationId: conversationId || `conv_${Date.now()}`,
