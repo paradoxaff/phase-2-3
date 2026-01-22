@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Server-side functions to interact with the backend API directly
-const BACKEND_BASE_URL = process.env.BACKEND_API_URL || 'http://localhost:8000';
+const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
 
 // Default MCP tools that call the backend API directly (without auth - will be overridden in POST handler)
 const mcpTools = {
@@ -213,20 +213,12 @@ const processNaturalLanguage = async (userMessage: string, userId: string, mcpTo
   }
 
   // Default response
-  return `Hello! I'm your AI assistant for managing tasks. You can ask me to:
-  - Add tasks: "Add a task to buy groceries"
-  - List tasks: "Show my tasks" or "What do I have to do?"
-  - Complete tasks: "Complete task 1" or "Mark the meeting as done"
-  - Delete tasks: "Delete the old task" or "Remove task 2"
-  - Update tasks: "Update task 1 to 'call mom'" or "Change the doctor appointment to next week"
-
-  What would you like to do?`;
+  return `Hello! I'm your AI assistant for managing tasks. You can ask me to:\n  - Add tasks: "Add a task to buy groceries"\n  - List tasks: "Show my tasks" or "What do I have to do?"\n  - Complete tasks: "Complete task 1" or "Mark the meeting as done"\n  - Delete tasks: "Delete the old task" or "Remove task 2"\n  - Update tasks: "Update task 1 to 'call mom'" or "Change the doctor appointment to next week"\n\nWhat would you like to do?`;
 };
 
-export async function POST(request: NextRequest, { params }: { params: { userId: string | null } }) {
+export async function POST(request: NextRequest) {
   try {
-    const { message, conversationId } = await request.json();
-    const userId = params.userId;
+    const { message, conversationId, userId } = await request.json();
 
     // Get the authorization header from the request to pass to backend API calls
     const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');

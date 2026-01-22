@@ -1,4 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+// This is a standalone version that doesn't rely on Next.js server imports
+// If you need this to work as a Next.js API route, place it in the proper app directory
+
+// Define the types we need since we can't import from next/server
+interface NextRequest {
+  json(): Promise<any>;
+  headers: {
+    get(name: string): string | null;
+  };
+}
+
+interface NextResponse {
+  status: number;
+  json(): Promise<any>;
+}
+
+// Mock the NextResponse functionality
+class MockNextResponse {
+  status: number;
+  body: any;
+
+  constructor(body: any, options?: { status?: number }) {
+    this.body = body;
+    this.status = options?.status || 200;
+  }
+
+  static json(body: any, options?: { status?: number }) {
+    return new MockNextResponse(body, options);
+  }
+}
 
 // Server-side functions to interact with the backend API directly
 const BACKEND_BASE_URL = process.env.BACKEND_API_URL || 'http://localhost:8000';
@@ -42,7 +71,7 @@ const processNaturalLanguage = async (userMessage: string, userId: string, mcpTo
       }
 
       const taskList = result.tasks.map((task: any, index: number) =>
-        `${index + 1}. ${task.title} ${task.completed ? '(completed)' : '(pending)'}`
+        `${index + 1}. ${task.title} ${task.completed ? '(completed)' : '(pending)}`
       ).join('\n');
 
       return `Here are your ${status === 'all' ? 'tasks' : status}:\n${taskList}`;
@@ -223,244 +252,8 @@ const processNaturalLanguage = async (userMessage: string, userId: string, mcpTo
   What would you like to do?`;
 };
 
-export async function POST(request: NextRequest, { params }: { params: { userId: string | null } }) {
-  try {
-    const { message, conversationId } = await request.json();
-    const userId = params.userId;
+// Export the main functionality
+export { processNaturalLanguage, mcpTools, BACKEND_BASE_URL };
 
-    // Get the authorization header from the request to pass to backend API calls
-    const authHeader = request.headers.get('authorization') || request.headers.get('Authorization');
-
-    // Create a modified mcpToolsInstance that includes the auth header
-    const createMcpTools = (authToken?: string) => {
-      return {
-        add_task: async (params: { user_id: string; title: string; description?: string }) => {
-          try {
-            const headers: Record<string, string> = {
-              'Content-Type': 'application/json',
-            };
-
-            if (authToken) {
-              headers['Authorization'] = authToken;
-            }
-
-            const response = await fetch(`${BACKEND_BASE_URL}/api/tasks`, {
-              method: 'POST',
-              headers,
-              body: JSON.stringify({
-                title: params.title,
-                description: params.description || '',
-                completed: false
-              }),
-            });
-
-            if (!response.ok) {
-              if (response.status === 401 || response.status === 403) {
-                console.error('Authentication error when adding task');
-                return { success: false, error: 'Authentication required to add tasks' };
-              }
-              throw new Error(`Failed to add task: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            const taskData = result.data?.task;
-
-            const formattedTask = {
-              id: taskData.id,
-              title: taskData.title,
-              description: taskData.description,
-              completed: taskData.completed,
-              userId: taskData.user_id || params.user_id,
-              createdAt: taskData.created_at || new Date().toISOString(),
-              updatedAt: taskData.updated_at || new Date().toISOString(),
-            };
-
-            return { success: true, task: formattedTask };
-          } catch (error) {
-            console.error('Error in add_task:', error);
-            return { success: false, error: 'Failed to add task' };
-          }
-        },
-
-        list_tasks: async (params: { user_id: string; status?: 'all' | 'pending' | 'completed' }) => {
-          try {
-            const headers: Record<string, string> = {};
-
-            if (authToken) {
-              headers['Authorization'] = authToken;
-            }
-
-            const response = await fetch(`${BACKEND_BASE_URL}/api/tasks`, {
-              headers
-            });
-
-            if (!response.ok) {
-              if (response.status === 401 || response.status === 403) {
-                console.error('Authentication error when listing tasks');
-                return { success: false, error: 'Authentication required to list tasks' };
-              }
-              throw new Error(`Failed to list tasks: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            const tasksData = result.data?.tasks || [];
-
-            const formattedTasks = tasksData.map((task: any) => ({
-              id: task.id,
-              title: task.title,
-              description: task.description,
-              completed: task.completed,
-              userId: task.user_id || params.user_id,
-              createdAt: task.created_at,
-              updatedAt: task.updated_at,
-            }));
-
-            return { success: true, tasks: formattedTasks };
-          } catch (error) {
-            console.error('Error in list_tasks:', error);
-            return { success: false, error: 'Failed to list tasks' };
-          }
-        },
-
-        complete_task: async (params: { user_id: string; task_id: string }) => {
-          try {
-            const headers: Record<string, string> = {
-              'Content-Type': 'application/json',
-            };
-
-            if (authToken) {
-              headers['Authorization'] = authToken;
-            }
-
-            const response = await fetch(`${BACKEND_BASE_URL}/api/tasks/${params.task_id}/complete?completed=true`, {
-              method: 'PATCH',
-              headers
-            });
-
-            if (!response.ok) {
-              if (response.status === 401 || response.status === 403) {
-                console.error('Authentication error when completing task');
-                return { success: false, error: 'Authentication required to complete tasks' };
-              }
-              throw new Error(`Failed to complete task: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            const taskData = result.data?.task;
-
-            const formattedTask = {
-              id: taskData.id,
-              title: taskData.title,
-              description: taskData.description,
-              completed: taskData.completed,
-              userId: taskData.user_id || params.user_id,
-              createdAt: taskData.created_at,
-              updatedAt: taskData.updated_at,
-            };
-
-            return { success: true, task: formattedTask };
-          } catch (error) {
-            console.error('Error in complete_task:', error);
-            return { success: false, error: 'Failed to complete task' };
-          }
-        },
-
-        delete_task: async (params: { user_id: string; task_id: string }) => {
-          try {
-            const headers: Record<string, string> = {};
-
-            if (authToken) {
-              headers['Authorization'] = authToken;
-            }
-
-            const response = await fetch(`${BACKEND_BASE_URL}/api/tasks/${params.task_id}`, {
-              method: 'DELETE',
-              headers
-            });
-
-            if (!response.ok) {
-              if (response.status === 401 || response.status === 403) {
-                console.error('Authentication error when deleting task');
-                return { success: false, error: 'Authentication required to delete tasks' };
-              }
-              throw new Error(`Failed to delete task: ${response.statusText}`);
-            }
-
-            return { success: true };
-          } catch (error) {
-            console.error('Error in delete_task:', error);
-            return { success: false, error: 'Failed to delete task' };
-          }
-        },
-
-        update_task: async (params: { user_id: string; task_id: string; title?: string; description?: string }) => {
-          try {
-            const headers: Record<string, string> = {
-              'Content-Type': 'application/json',
-            };
-
-            if (authToken) {
-              headers['Authorization'] = authToken;
-            }
-
-            const response = await fetch(`${BACKEND_BASE_URL}/api/tasks/${params.task_id}`, {
-              method: 'PUT',
-              headers,
-              body: JSON.stringify({
-                title: params.title,
-                description: params.description,
-              }),
-            });
-
-            if (!response.ok) {
-              if (response.status === 401 || response.status === 403) {
-                console.error('Authentication error when updating task');
-                return { success: false, error: 'Authentication required to update tasks' };
-              }
-              throw new Error(`Failed to update task: ${response.statusText}`);
-            }
-
-            const result = await response.json();
-            const taskData = result.data?.task;
-
-            const formattedTask = {
-              id: taskData.id,
-              title: taskData.title,
-              description: taskData.description,
-              completed: taskData.completed,
-              userId: taskData.user_id || params.user_id,
-              createdAt: taskData.created_at,
-              updatedAt: taskData.updated_at,
-            };
-
-            return { success: true, task: formattedTask };
-          } catch (error) {
-            console.error('Error in update_task:', error);
-            return { success: false, error: 'Failed to update task' };
-          }
-        }
-      };
-    };
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
-    }
-
-    if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
-    }
-
-    // Process the natural language message using enhanced NLU with the authenticated tools
-    const mcpToolsInstanceWithAuth = createMcpTools(authHeader);
-    const response = await processNaturalLanguage(message, userId, mcpToolsInstanceWithAuth);
-
-    return NextResponse.json({
-      conversationId: conversationId || `conv_${Date.now()}`,
-      response,
-      mcpToolCalls: []
-    });
-  } catch (error) {
-    console.error('Error processing chat:', error);
-    return NextResponse.json({ error: 'Failed to process chat message' }, { status: 500 });
-  }
-}
+// If you want to use this as an API route, you'd need to place the actual route file
+// in the proper Next.js app directory: frontend/src/app/api/[userId]/chat/route.ts
