@@ -23,7 +23,10 @@ const mcpTools = {
 };
 
 // Enhanced NLU (Natural Language Understanding) function with better intent recognition
-const processNaturalLanguage = async (userMessage: string, userId: string, mcpToolsInstance: any = mcpTools) => {
+const processNaturalLanguage = async (userMessage: string, userId: string | null, mcpToolsInstance: any = mcpTools) => {
+  if (!userId) {
+    return "User ID is required to process this request.";
+  }
   const lowerMsg = userMessage.toLowerCase().trim();
 
   // List tasks intent first (highest priority)
