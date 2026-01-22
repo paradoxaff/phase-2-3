@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../services/auth';
-import { apiClient } from '../../services/api';
-import TaskForm from '../../components/TaskForm';
-import TaskList from '../../components/TaskList';
-import { Task } from '../../types/task';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '@/services/auth';
+import { apiClient } from '@/services/api';
+import TaskForm from '@/components/TaskForm';
+import TaskList from '@/components/TaskList';
+import { Task } from '@/types/task';
 
 interface Message {
   id: string;
@@ -31,7 +30,6 @@ export default function TasksPage() {
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { darkMode, toggleDarkMode } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
@@ -75,14 +73,14 @@ export default function TasksPage() {
 
     try {
       // Call the chat API endpoint
-      const response = await fetch(`/api/${user.id}/chat`, {
+      const response = await fetch(`/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`, // Include the authentication token
         },
         body: JSON.stringify({
           message: inputText,
+          userId: user?.id, // Pass userId in the body instead of URL
           conversationId: localStorage.getItem('conversationId') || null,
         }),
       });
@@ -158,40 +156,17 @@ export default function TasksPage() {
   }
 
   return (
-    <div style={{
-      padding: '2rem',
-      display: 'grid',
-      gridTemplateColumns: '2fr 1fr',
-      gap: '2rem',
-      backgroundColor: darkMode ? '#1a202c' : 'white',
-      color: darkMode ? 'white' : 'black',
-      minHeight: '100vh'
-    }}>
+    <div style={{ padding: '2rem', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
       <div>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h1>Your Tasks</h1>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {/* Dark mode toggle button */}
-            <button
-              onClick={toggleDarkMode}
-              style={{
-                padding: '0.5rem',
-                backgroundColor: darkMode ? '#4a5568' : '#e2e8f0',
-                color: darkMode ? 'white' : 'black',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.8rem'
-              }}
-            >
-              {darkMode ? 'Light Mode' : 'Dark Mode'}
-            </button>
+          <div>
             <span style={{ marginRight: '1rem' }}>Welcome, {user?.email}</span>
             <button
               onClick={handleLogout}
               style={{
                 padding: '0.5rem 1rem',
-                backgroundColor: darkMode ? '#e53e3e' : '#dc3545',
+                backgroundColor: '#dc3545',
                 color: 'white',
                 border: 'none',
                 borderRadius: '4px',
@@ -228,9 +203,9 @@ export default function TasksPage() {
           overflowY: 'auto',
           marginBottom: '1rem',
           padding: '1rem',
-          border: `1px solid ${darkMode ? '#4a5568' : '#ccc'}`,
+          border: '1px solid #ccc',
           borderRadius: '4px',
-          backgroundColor: darkMode ? '#2d3748' : '#f9f9f9',
+          backgroundColor: '#f9f9f9',
           maxHeight: '500px'
         }}>
           {messages.map((message) => (
@@ -246,10 +221,8 @@ export default function TasksPage() {
                   display: 'inline-block',
                   padding: '0.5rem 1rem',
                   borderRadius: '8px',
-                  backgroundColor: darkMode
-                    ? (message.role === 'user' ? '#2b6cb0' : '#4a5568')
-                    : (message.role === 'user' ? '#007bff' : '#e9ecef'),
-                  color: darkMode ? 'white' : (message.role === 'user' ? 'white' : 'black'),
+                  backgroundColor: message.role === 'user' ? '#007bff' : '#e9ecef',
+                  color: message.role === 'user' ? 'white' : 'black',
                   maxWidth: '90%',
                   wordWrap: 'break-word',
                 }}
@@ -259,7 +232,7 @@ export default function TasksPage() {
               <div
                 style={{
                   fontSize: '0.7rem',
-                  color: darkMode ? '#a0aec0' : '#888',
+                  color: '#888',
                   marginTop: '0.25rem',
                   textAlign: message.role === 'user' ? 'right' : 'left'
                 }}
@@ -281,10 +254,8 @@ export default function TasksPage() {
             style={{
               flex: 1,
               padding: '0.5rem',
-              border: `1px solid ${darkMode ? '#4a5568' : '#ccc'}`,
+              border: '1px solid #ccc',
               borderRadius: '4px',
-              backgroundColor: darkMode ? '#2d3748' : 'white',
-              color: darkMode ? 'white' : 'black',
             }}
           />
           <button
@@ -292,9 +263,7 @@ export default function TasksPage() {
             disabled={isLoading || !inputText.trim() || !user?.id}
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: isLoading
-                ? (darkMode ? '#718096' : '#ccc')
-                : (darkMode ? '#38a169' : '#28a745'),
+              backgroundColor: isLoading ? '#ccc' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '4px',
