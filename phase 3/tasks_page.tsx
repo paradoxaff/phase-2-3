@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../services/auth';
-import { apiClient } from '../../services/api';
-import TaskForm from '../../components/TaskForm';
-import TaskList from '../../components/TaskList';
-import { Task } from '../../types/task';
+import { useAuth } from '../services/auth';
+import { apiClient } from '../services/api';
+import TaskForm from '../components/TaskForm';
+import TaskList from '../components/TaskList';
+import { Task } from '../types/task';
 
 interface Message {
   id: string;
@@ -73,7 +73,7 @@ export default function TasksPage() {
 
     try {
       // Call the chat API endpoint
-      const response = await fetch(`/api/${user.id}/chat`, {
+      const response = await fetch(`/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
