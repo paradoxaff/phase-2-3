@@ -10,40 +10,21 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [darkMode, setDarkMode] = useState<boolean>(false);
-  const [initialized, setInitialized] = useState<boolean>(false);
-
-  useEffect(() => {
-    // Initialize theme after component mounts
-    const savedTheme = localStorage.getItem('darkMode');
-    let initialDarkMode = false;
-
-    if (savedTheme !== null) {
-      initialDarkMode = JSON.parse(savedTheme);
-    } else {
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    // Initialize from localStorage or system preference
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('darkMode');
+      if (savedTheme !== null) {
+        return JSON.parse(savedTheme);
+      }
       // Check system preference only in the browser
-      if (typeof window !== 'undefined' && window.matchMedia) {
-        initialDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
-
-    setDarkMode(initialDarkMode);
-    setInitialized(true);
-
-    // Apply the theme class to the document element
-    if (typeof document !== 'undefined') {
-      if (initialDarkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-  }, []);
+    return false; // Default to light mode for SSR
+  });
 
   useEffect(() => {
-    // Update theme class and save to localStorage when darkMode changes
-    if (!initialized) return;
-
+    // Apply the theme class to the document element
     if (typeof document !== 'undefined') {
       if (darkMode) {
         document.documentElement.classList.add('dark');
@@ -52,10 +33,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
 
+    // Save to localStorage
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('darkMode', JSON.stringify(darkMode));
     }
-  }, [darkMode, initialized]);
+  }, [darkMode]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
